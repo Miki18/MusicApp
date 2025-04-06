@@ -1,134 +1,151 @@
 import wave
 import pygame
 import dearpygui.dearpygui as dpg
+import os
+import shutil
 
-# Globalne zmienne
-current_wave_path = "bitwa.wav"
-is_playing = False
-volume = 1.0  # Głośność (od 0.0 do 1.0)
-speed = 1.0
+class Song:
+    def __init__(self, name):
+        self.filename = name
+        self.Title = name
+        self.Author = "Unknown"
+        self.Year = "----"
+        self.is_playing = False
+        self.volume = 1.0
+        self.filename_to_play = "Current.wav"
+        self.speed = 1.0
 
-def change_speed(input_file, output_file, speed_factor):
-    with wave.open(input_file, 'rb') as wf:
-        params = wf.getparams()  # Pobranie parametrów pliku
-        frames = wf.readframes(wf.getnframes())
+    # start music
+    def play(self, sender=None, app_data=None):
+        if not self.is_playing:
+            with wave.open(self.filename, 'rb') as wf:
+                params = wf.getparams()
+                frames = wf.readframes(wf.getnframes())
 
-    # Nowy obiekt dla pliku wyjściowego
-    with wave.open(output_file, 'wb') as wf_out:
-        # Zmiana częstotliwości próbkowania
-        new_framerate = int(params.framerate * speed_factor)
-        wf_out.setparams(params._replace(framerate=new_framerate))
-        wf_out.writeframes(frames)
+            with wave.open(self.filename_to_play, 'wb') as wf_out:
+                new_framerate = int(params.framerate * self.speed)
+                wf_out.setparams(params._replace(framerate=new_framerate))
+                wf_out.writeframes(frames)
 
-# Przyspieszenie utworu o 50%
-change_speed("bitwa.wav", "bitwa_faster.wav", 1.5)
+            pygame.mixer.init()
+            pygame.mixer.music.load(self.filename_to_play)
+            pygame.mixer.music.set_volume(self.volume)
+            pygame.mixer.music.play()
+            self.is_playing = True
 
-# Spowolnienie utworu o 50%
-change_speed("bitwa.wav", "bitwa_slower.wav", 0.5)
+    # stop music
+    def stop(self, sender=None, app_data=None):
+        if self.is_playing:
+            pygame.mixer.music.stop()
+            pygame.mixer.quit()
+            self.is_playing = False
+            os.remove(self.filename_to_play)
 
+    # Increase volume
+    def louder(self, sender=None, app_data=None):
+        self.volume = min(self.volume + 0.1, 1.0)
+        print(self.volume)
+
+    # Decrease volume
+    def quieter(self, sender=None, app_data=None):
+        self.volume = max(self.volume - 0.1, 0.0)
+        print(self.volume)
+
+    def faster(self, sender=None, app_data=None):
+        self.speed = min(self.speed + 0.1, 2.0)
+        print(self.speed)
+
+    def slower(self, sender=None, app_data=None):
+        self.speed = max(self.speed - 0.1, 0.1)
+        print(self.speed)
+
+    # analize wav
+    def info(self, sender=None, app_data=None):
+        with wave.open(self.filename, 'rb') as wf:
+            info_text = "Framerate: " + str(wf.getframerate()) + "\n" + "Time: " + str(
+                round(wf.getnframes() / wf.getframerate(), 2))
+            dpg.set_value("wave_info", info_text)
+
+SongList = []
+SongNumber = 0
+
+# FILE IMPORT
+def import_file(sender, app_data):
+    from tkinter import filedialog, Tk
+    Tk().withdraw()
+    file_path = filedialog.askopenfilename(title="Choose file", filetypes=[("Wav files", "*.wav")])
+    if file_path:
+        destination_folder = os.getcwd()
+        try:
+            shutil.copy(file_path, destination_folder)
+            global current_wave_path
+            current_wave_path = os.path.basename(file_path)
+            print(f"File {current_wave_path} was imported.")
+            SongList.append(Song(current_wave_path))
+            update_song_list()  # Zaktualizuj listę w GUI
+        except Exception as e:
+            print(f"Failed to import file: {e}")
+
+def ChooseSong(i):
+    global SongNumber
+    SongNumber = i
+    print(i)
+
+def update_song_list( ):
+    dpg.delete_item("songlistwindow", children_only=True)
+
+    for i, song in enumerate(SongList):
+        print(i)
+        dpg.add_button(
+            label=song.filename,  # title
+            callback=lambda: ChooseSong(i),  # Przekazywanie i do funkcji ChooseSong
+            parent="songlistwindow",
+            width=200,
+            height=50
+        )
+
+# cut audio
 def cut_audio(input_file, output_file, start_time, end_time):
     with wave.open(input_file, 'rb') as wf:
         params = wf.getparams()
         framerate = params.framerate
-        n_channels = params.nchannels
         start_frame = int(start_time * framerate)
         end_frame = int(end_time * framerate)
 
-        # Wycinanie ramek
         wf.setpos(start_frame)
         frames = wf.readframes(end_frame - start_frame)
 
-    # Zapis wyciętego fragmentu do nowego pliku
     with wave.open(output_file, 'wb') as wf_out:
         wf_out.setparams(params)
         wf_out.writeframes(frames)
 
-# Wycięcie fragmentu od 10 do 20 sekundy
-cut_audio("bitwa.wav", "bitwa_cut.wav", 10, 20)
-
-# Funkcja do odtwarzania muzyki
-def play_music(sender, app_data):
-    global is_playing
-    if not is_playing:
-        pygame.mixer.init()
-        pygame.mixer.music.load(current_wave_path)
-        pygame.mixer.music.set_volume(volume)  # Ustawienie początkowej głośności
-        pygame.mixer.music.play()
-        is_playing = True
-
-# Funkcja do zatrzymania muzyki
-def stop_music(sender, app_data):
-    global is_playing
-    if is_playing:
-        pygame.mixer.music.stop()
-        is_playing = False
-
-# Funkcja do zwiększania głośności
-def make_louder(sender, app_data):
-    global volume
-    volume = min(volume + 0.1, 1.0)  # Maksymalna głośność to 1.0
-    pygame.mixer.music.set_volume(volume)
-    print(f"Głośność: {volume}")
-
-# Funkcja do zmniejszania głośności
-def make_quieter(sender, app_data):
-    global volume
-    volume = max(volume - 0.1, 0.0)  # Minimalna głośność to 0.0
-    pygame.mixer.music.set_volume(volume)
-    print(f"Głośność: {volume}")
-
-def faster_music(sender, app_data):
-    change_speed(current_wave_path, "bitwa_faster.wav", 1.5)
-    pygame.mixer.music.load("bitwa_faster.wav")
-    pygame.mixer.music.play()
-
-def slower_music(sender, app_data):
-    change_speed(current_wave_path, "bitwa_slower.wav", 0.5)
-    pygame.mixer.music.load("bitwa_slower.wav")
-    pygame.mixer.music.play()
-
+# cut music
 def cut_music(sender, app_data):
     cut_audio(current_wave_path, "bitwa_cut.wav", 10, 20)
     pygame.mixer.music.load("bitwa_cut.wav")
     pygame.mixer.music.play()
 
-
-# Funkcja do analizy pliku za pomocą wave
-def get_wave_info(file_path):
-    with wave.open(file_path, 'rb') as wf:
-        return {
-            "Channels": wf.getnchannels(),
-            "Sample Width": wf.getsampwidth(),
-            "Frame Rate (Hz)": wf.getframerate(),
-            "Number of Frames": wf.getnframes(),
-            "Duration (s)": round(wf.getnframes() / wf.getframerate(), 2)
-        }
-
-# Funkcja do wyświetlania informacji w GUI
-def show_wave_info(sender, app_data):
-    info = get_wave_info(current_wave_path)
-    info_text = "\n".join([f"{key}: {value}" for key, value in info.items()])
-    dpg.set_value("wave_info", info_text)
-
+# Main window
 if __name__ == "__main__":
-    # Inicjalizacja Dear PyGui
     dpg.create_context()
     dpg.create_viewport(title="Music Program", width=600, height=700)
 
-    # Tworzenie okna aplikacji
-    with dpg.window(label="Main Window", width=400, height=300) as main_window:
-        dpg.add_text("Program do odtwarzania muzyki")
-        dpg.add_button(label="Play Music", callback=play_music)
-        dpg.add_button(label="Stop Music", callback=stop_music)
-        dpg.add_button(label="Głośniej", callback=make_louder)
-        dpg.add_button(label="Ciszej", callback=make_quieter)
-        dpg.add_button(label="Faster Music", callback=faster_music)
-        dpg.add_button(label="Slower Music", callback=slower_music)
-        dpg.add_button(label="Cut Music (10-20s)", callback=cut_music)
-        dpg.add_button(label="Show Info", callback=show_wave_info)
-        dpg.add_text("", tag="wave_info")  # Obszar na informacje o pliku .wav
+    with dpg.window(label="Main Window", width=400, height=300, tag="MainWindow"):
+        dpg.add_button(label="Play Music", callback=lambda: SongList[SongNumber].play())
+        dpg.add_button(label="Stop Music", callback=lambda: SongList[SongNumber].stop())
+        dpg.add_button(label="Louder", callback=lambda: SongList[SongNumber].louder())
+        dpg.add_button(label="Quieter", callback=lambda: SongList[SongNumber].quieter())
+        dpg.add_button(label="Faster Music", callback=lambda: SongList[SongNumber].faster())
+        dpg.add_button(label="Slower Music", callback=lambda: SongList[SongNumber].slower())
+        dpg.add_button(label="Show Info", callback=lambda: SongList[SongNumber].info())
+        dpg.add_text("", tag="wave_info")
+        # dpg.add_button(label="Cut Music (10-20s)", callback=cut_music)
+        dpg.add_button(label="Import file", callback=import_file)
 
-    # Uruchomienie Dear PyGui
+    # Okno z listą utworów
+    with dpg.window(label="Song List", width=400, height=300, tag="songlistwindow"):
+        dpg.add_text("No songs added yet.")  # Początkowy tekst w oknie listy
+
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.start_dearpygui()

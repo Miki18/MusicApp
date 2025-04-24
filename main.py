@@ -4,6 +4,7 @@ import dearpygui.dearpygui as dpg
 import os
 import shutil
 
+#song class - each instance of this class stores 1 song
 class Song:
     def __init__(self, name):
         self.filename = name
@@ -82,27 +83,28 @@ def import_file(sender, app_data):
             current_wave_path = os.path.basename(file_path)
             print(f"File {current_wave_path} was imported.")
             SongList.append(Song(current_wave_path))
-            update_song_list()  # Zaktualizuj listę w GUI
+            update_song_list()
         except Exception as e:
             print(f"Failed to import file: {e}")
 
-def ChooseSong(i):
+def ChooseSong(k):
     global SongNumber
-    SongNumber = i
-    print(i)
+    SongNumber = k
+    print(k)
 
-def update_song_list( ):
-    dpg.delete_item("songlistwindow", children_only=True)
+def update_song_list():
+    dpg.delete_item("SongListWindow", children_only=True)
 
     for i, song in enumerate(SongList):
-        print(i)
+        #print("check: " + str(i))
         dpg.add_button(
             label=song.filename,  # title
-            callback=lambda: ChooseSong(i),  # Przekazywanie i do funkcji ChooseSong
-            parent="songlistwindow",
+            callback=lambda a=i: ChooseSong(a-46 - len(SongList)),
+            parent="SongListWindow",
             width=200,
             height=50
         )
+
 
 # cut audio
 def cut_audio(input_file, output_file, start_time, end_time):
@@ -125,28 +127,73 @@ def cut_music(sender, app_data):
     pygame.mixer.music.load("bitwa_cut.wav")
     pygame.mixer.music.play()
 
+#exit program
+def exit_program():
+    dpg.stop_dearpygui()
+    dpg.destroy_context()
+    exit()
+
 # Main window
 if __name__ == "__main__":
     dpg.create_context()
-    dpg.create_viewport(title="Music Program", width=600, height=700)
 
-    with dpg.window(label="Main Window", width=400, height=300, tag="MainWindow"):
-        dpg.add_button(label="Play Music", callback=lambda: SongList[SongNumber].play())
-        dpg.add_button(label="Stop Music", callback=lambda: SongList[SongNumber].stop())
-        dpg.add_button(label="Louder", callback=lambda: SongList[SongNumber].louder())
-        dpg.add_button(label="Quieter", callback=lambda: SongList[SongNumber].quieter())
-        dpg.add_button(label="Faster Music", callback=lambda: SongList[SongNumber].faster())
-        dpg.add_button(label="Slower Music", callback=lambda: SongList[SongNumber].slower())
-        dpg.add_button(label="Show Info", callback=lambda: SongList[SongNumber].info())
+    #load textures
+    with dpg.texture_registry():
+        width, height, channels, data = dpg.load_image("start.png")
+        texture_play = dpg.add_static_texture(width, height, data, tag="texture_play")
+        width, height, channels, data = dpg.load_image("stop.png")
+        texture_stop = dpg.add_static_texture(width, height, data, tag="texture_stop")
+        width, height, channels, data = dpg.load_image("Faster.png")
+        texture_faster = dpg.add_static_texture(width, height, data, tag="texture_faster")
+        width, height, channels, data = dpg.load_image("Slower.png")
+        texture_slower = dpg.add_static_texture(width, height, data, tag="texture_slower")
+        width, height, channels, data = dpg.load_image("Louder.png")
+        texture_louder = dpg.add_static_texture(width, height, data, tag="texture_louder")
+        width, height, channels, data = dpg.load_image("Quieter.png")
+        texture_quieter = dpg.add_static_texture(width, height, data, tag="texture_quieter")
+        width, height, channels, data = dpg.load_image("Info.png")
+        texture_info = dpg.add_static_texture(width, height, data, tag="texture_info")
+        width, height, channels, data = dpg.load_image("exit.png")
+        texture_exit = dpg.add_static_texture(width, height, data, tag="texture_exit")
+        width, height, channels, data = dpg.load_image("file.png")
+        texture_file = dpg.add_static_texture(width, height, data, tag="texture_file")
+
+    dpg.create_viewport(title="Music Program", width=1600, height=900, resizable=False, decorated=False)
+
+    #Main Window
+    with dpg.window(label="Main Window", width=1600, height=900, tag="MainWindow", no_move=True, no_resize=True):
+        # Main section
+        with dpg.group(horizontal=True):
+            # Buttons
+            with dpg.group(tag="ButtonGroup"):
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].play(), width=20, height=20,
+                                     texture_tag="texture_play")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].stop(), width=20, height=20,
+                                     texture_tag="texture_stop")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].louder(), width=20, height=20,
+                                     texture_tag="texture_louder")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].quieter(), width=20, height=20,
+                                     texture_tag="texture_quieter")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].faster(), width=20, height=20,
+                                     texture_tag="texture_faster")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].slower(), width=20, height=20,
+                                     texture_tag="texture_slower")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].info(), width=20, height=20,
+                                     texture_tag="texture_info")
+                dpg.add_image_button(callback=import_file, width=20, height=20, texture_tag="texture_file")
+                dpg.add_image_button(callback=lambda: exit_program(), width=20, height=20, texture_tag="texture_exit")
+                # dpg.add_button(label="Cut Music (10-20s)", callback=cut_music)
+
+            # Song list
+            with dpg.group(tag="SongListWindow"):
+                dpg.add_text("Song List:", tag="songlist_title")
+                dpg.add_text("No songs added yet.", tag="songlist_content")
+
+        # Under main section
+        dpg.add_separator()
+        #info
         dpg.add_text("", tag="wave_info")
-        # dpg.add_button(label="Cut Music (10-20s)", callback=cut_music)
-        dpg.add_button(label="Import file", callback=import_file)
-
-    # Okno z listą utworów
-    with dpg.window(label="Song List", width=400, height=300, tag="songlistwindow"):
-        dpg.add_text("No songs added yet.")  # Początkowy tekst w oknie listy
 
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.start_dearpygui()
-    dpg.destroy_context()

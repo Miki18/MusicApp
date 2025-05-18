@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6fea3f2f-6f56-422b-bc0a-e0079a0d3735" name="Changes" comment="Refactoring&#10;Added saving&#10;Added forward and backward skipping">
+    <list default="true" id="6fea3f2f-6f56-422b-bc0a-e0079a0d3735" name="Changes" comment="Update Workspace">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitwa.mp3" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitwa.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitwa_cut.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitwa_faster.wav" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/bitwa_slower.wav" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,6 +15,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {
@@ -175,7 +172,15 @@
       <option name="project" value="LOCAL" />
       <updated>1746874604646</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Update Workspace">
+      <option name="closed" value="true" />
+      <created>1746874748117</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1746874748117</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -208,6 +213,7 @@
     <MESSAGE value="Added class" />
     <MESSAGE value="Added buttons&#10;- they can be clicked&#10;- every buttons do different thing and has a proper texture&#10;Added exit button&#10;Change visible layout" />
     <MESSAGE value="Refactoring&#10;Added saving&#10;Added forward and backward skipping" />
-    <option name="LAST_COMMIT_MESSAGE" value="Refactoring&#10;Added saving&#10;Added forward and backward skipping" />
+    <MESSAGE value="Update Workspace" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update Workspace" />
   </component>
 </project>

@@ -1,15 +1,19 @@
+from types import LambdaType
+
 import pygame
 import wave
 import time
 import os
 import shutil
 import dearpygui.dearpygui as dpg
+from dearpygui.dearpygui import add_button
+
 
 #song class - each instance of this class stores 1 song
 class Song:
     def __init__(self, name, Title, Author, Year):
         self.filename = name
-        self.Title = name
+        self.Title = Title
         self.Author = Author
         self.Year = Year
         self.volume = 0.5
@@ -25,7 +29,7 @@ class Song:
         with wave.open(self.filename, 'rb') as wf:
             framerate = wf.getframerate()
             frames = wf.getnframes()
-            return frames / framerate  # Czas trwania w sekundach
+            return frames / framerate
 
     # start music
     def play(self, sender=None, app_data=None):
@@ -56,7 +60,8 @@ class Song:
         if self.is_playing:
             pygame.mixer.music.stop()
             pygame.mixer.quit()
-            self.paused_time = time.time() - self.start_time
+            print(self.paused_time)
+            self.paused_time = (time.time() - self.start_time) + self.paused_time
             self.is_playing = False
 
     def louder(self, sedner=None, app_data=None):
@@ -82,7 +87,7 @@ class Song:
         self.paused_time = self.paused_time + 10
 
         if was_playing:
-            self.play()  # Wznawiamy od nowej pozycji
+            self.play()
 
     def backward(self, sender=None, app_data=None):
         was_playing = False
@@ -90,10 +95,16 @@ class Song:
             was_playing = True
             self.stop()
 
-        self.paused_time = self.paused_time - 10
+        self.paused_time = max(0, self.paused_time - 10)
 
         if was_playing:
             self.play()
+
+    def reset(self, sender=None, app_data=None):
+        if self.is_playing:
+            self.stop()
+
+        self.paused_time = 0
 
     def info(self, sender=None, app_data=None):
         with wave.open(self.filename, 'rb') as wf:
@@ -143,14 +154,17 @@ def ChooseSong(k):
     print(k)
     updateSongProperties()
 
+def create_callback(index):
+    return lambda: ChooseSong(index)
+
 def update_song_list():
     dpg.delete_item("SongListWindow", children_only=True)
 
-    for i, song in enumerate(SongList):
-        #print("check: " + str(i))
+    for index, song in enumerate(SongList):
+        print("check: " + str(index))
         dpg.add_button(
             label=song.filename,  # title
-            callback=lambda a=i: ChooseSong(a-57 - len(SongList)),
+            callback=create_callback(index),
             parent="SongListWindow",
             width=200,
             height=50
@@ -184,15 +198,16 @@ def save():
             file.write(Song.getAuthor() + "\n")
             file.write(Song.getYear() + "\n")
 
-# cut music
-def cut_music(sender, app_data):
-    cut_audio(current_wave_path, "bitwa_cut.wav", 10, 20)
-    pygame.mixer.music.load("bitwa_cut.wav")
-    pygame.mixer.music.play()
+def Load(file_name, title, author, year):
+    destination_folder = os.getcwd()
+    destination_path = os.path.join(destination_folder, file_name)
+
+    if os.path.exists(destination_path):
+        SongList.append(Song(file_name, title, author, year))
+        update_song_list()
 
 #update song properties
 def updateSongProperties():
-    print("hello")
     dpg.delete_item("SongProperties", children_only=True)
 
     dpg.add_text("SongProperties", parent="SongProperties")
@@ -211,23 +226,12 @@ def updateSongProperties():
 
 #exit program
 def exit_program():
-    dpg.stop_dearpygui()
-    dpg.destroy_context()
     exit()
 
 # Main window
 if __name__ == "__main__":
     pygame.init()
     dpg.create_context()
-
-    #read previous data
-    with open("save.txt") as file:
-        while True:
-            lines = [file.readline().strip() for _ in range(4)]
-
-            if not all(lines):
-                break
-            import_file(lines[0], lines[1], lines[2], lines[3])
 
     #load textures
     with dpg.texture_registry():
@@ -253,6 +257,10 @@ if __name__ == "__main__":
         texture_forward = dpg.add_static_texture(width, height, data, tag="texture_forward")
         width, height, channels, data = dpg.load_image("backward.png")
         texture_backward = dpg.add_static_texture(width, height, data, tag="texture_backward")
+        width, height, channels, data = dpg.load_image("save.png")
+        texture_save = dpg.add_static_texture(width, height, data, tag="texture_save")
+        width, height, channels, data = dpg.load_image("reset.png")
+        texture_reset = dpg.add_static_texture(width, height, data, tag="texture_reset")
 
     dpg.create_viewport(title="Music Program", width=1600, height=900, resizable=False, decorated=False)
 
@@ -268,13 +276,13 @@ if __name__ == "__main__":
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].quieter(), width=20, height=20, texture_tag="texture_quieter")
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].faster(), width=20, height=20, texture_tag="texture_faster")
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].slower(), width=20, height=20, texture_tag="texture_slower")
-                dpg.add_image_button(callback=lambda: SongList[SongNumber].forward(), height=20, texture_tag="texture_forward")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].forward(), width=20, height=20, texture_tag="texture_forward")
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].backward(), width=20, height=20, texture_tag="texture_backward")
+                dpg.add_image_button(callback=lambda: SongList[SongNumber].reset(), width=20, height=20, texture_tag="texture_reset")
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].info(), width=20, height=20, texture_tag="texture_info")
                 dpg.add_image_button(callback=import_file_interract, width=20, height=20, texture_tag="texture_file")
-                dpg.add_image_button(callback=save, width=20, height=20, texture_tag="texture_file")
+                dpg.add_image_button(callback=save, width=20, height=20, texture_tag="texture_save")
                 dpg.add_image_button(callback=lambda: exit_program(), width=20, height=20, texture_tag="texture_exit")
-                # dpg.add_button(label="Cut Music (10-20s)", callback=cut_music)
             dpg.add_spacing()
 
             with dpg.child(tag="SongProperties", width=500):
@@ -283,11 +291,21 @@ if __name__ == "__main__":
 
             dpg.add_spacing()
             # Song list
+
             with dpg.child(tag="SongListWindow", width=250):
                 dpg.add_text("Song List:", tag="songlist_title")
                 dpg.add_text("No songs added yet.", tag="songlist_content")
 
         dpg.add_text("", tag="wave_info")
+
+        # read previous data
+        with open("save.txt") as file:
+            while True:
+                lines = [file.readline().strip() for _ in range(4)]
+
+                if not all(lines):
+                    break
+                Load(lines[0], lines[1], lines[2], lines[3])
 
     dpg.setup_dearpygui()
     dpg.show_viewport()

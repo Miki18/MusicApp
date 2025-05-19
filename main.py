@@ -127,6 +127,19 @@ class Song:
 SongList = []
 SongNumber = 0
 
+#Sorting
+def sortSong(parameter, isReverse):
+    if parameter == "Title":
+        SongList.sort(key=lambda song: song.Title, reverse=isReverse)
+
+    if parameter == "Author":
+        SongList.sort(key=lambda song: song.Author, reverse=isReverse)
+
+    if parameter == "Year":
+        SongList.sort(key=lambda song: song.Year, reverse=isReverse)
+
+    update_song_list()
+
 #FILE IMPORT
 def import_file(file_path, title, author, year):
     destination_folder = os.getcwd()
@@ -134,7 +147,6 @@ def import_file(file_path, title, author, year):
         shutil.copy(file_path, destination_folder)
         global current_wave_path
         current_wave_path = os.path.basename(file_path)
-        # print(f"File {current_wave_path} was imported.")
         SongList.append(Song(current_wave_path, current_wave_path, author, year))
         update_song_list()
     except Exception as e:
@@ -151,7 +163,6 @@ def import_file_interract(sender, app_data):
 def ChooseSong(k):
     global SongNumber
     SongNumber = k
-    print(k)
     updateSongProperties()
 
 def create_callback(index):
@@ -163,13 +174,12 @@ def update_song_list():
     for index, song in enumerate(SongList):
         print("check: " + str(index))
         dpg.add_button(
-            label=song.filename,  # title
+            label=song.getTitle(),
             callback=create_callback(index),
             parent="SongListWindow",
             width=200,
             height=50
         )
-
 
 # cut audio
 def cut_audio(input_file, output_file, start_time, end_time):
@@ -224,6 +234,9 @@ def updateSongProperties():
     dpg.add_input_text(default_value=SongList[SongNumber].Year, parent="SongProperties",
                        callback=lambda sender, app_data: setattr(SongList[SongNumber], "Year", app_data))
 
+    dpg.add_text("", tag="wave_info", parent="SongProperties")
+
+
 #exit program
 def exit_program():
     exit()
@@ -268,7 +281,8 @@ if __name__ == "__main__":
     with dpg.window(label="Main Window", width=1600, height=900, tag="MainWindow", no_move=True, no_resize=True):
         # Main section
         with dpg.group(horizontal=True):
-            # Buttons
+
+            # Buttons (first column)
             with dpg.child(tag="ButtonGroup", width=50):
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].play(), width=20, height=20, texture_tag="texture_play")
                 dpg.add_image_button(callback=lambda: SongList[SongNumber].stop(), width=20, height=20, texture_tag="texture_stop")
@@ -285,18 +299,34 @@ if __name__ == "__main__":
                 dpg.add_image_button(callback=lambda: exit_program(), width=20, height=20, texture_tag="texture_exit")
             dpg.add_spacing()
 
+            #song properties (second column)
             with dpg.child(tag="SongProperties", width=500):
                 dpg.add_text("Song Properties")
                 dpg.add_text("Nothing to show here")
 
-            dpg.add_spacing()
-            # Song list
-
+            # Song list (third column)
             with dpg.child(tag="SongListWindow", width=250):
                 dpg.add_text("Song List:", tag="songlist_title")
                 dpg.add_text("No songs added yet.", tag="songlist_content")
 
-        dpg.add_text("", tag="wave_info")
+            #Sorting
+            with dpg.child(tag="SortFunctions", width=220):
+                dpg.add_text("Sorting:")
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Title:")
+                    dpg.add_button(label="Ascending", callback=lambda: sortSong("Title", False))
+                    dpg.add_button(label="Descending", callback=lambda: sortSong("Title", True))
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Author:")
+                    dpg.add_button(label="Ascending", callback=lambda: sortSong("Author", False))
+                    dpg.add_button(label="Descending", callback=lambda: sortSong("Author", True))
+
+                with dpg.group(horizontal=True):
+                    dpg.add_text("Year:")
+                    dpg.add_button(label="Ascending", callback=lambda: sortSong("Year", False))
+                    dpg.add_button(label="Descending", callback=lambda: sortSong("Year", True))
 
         # read previous data
         with open("save.txt") as file:
